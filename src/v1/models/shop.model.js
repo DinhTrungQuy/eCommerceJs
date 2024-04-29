@@ -26,10 +26,10 @@ var shopSchema = new mongoose.Schema(
     },
     verify: {
       type: mongoose.Schema.Types.Boolean,
-      default: [],
+      default: false,
     },
     roles: {
-      type: String,
+      type: Array,
       default: [],
     },
   },
