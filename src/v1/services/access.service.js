@@ -6,6 +6,8 @@ const crypto = require("crypto");
 const KeyTokenService = require("./keyToken.service");
 const { createTokenPair } = require("../auth/authUltils");
 const { getInfoData } = require("../utils");
+const { ConflictResponse } = require("../core/error.response");
+const { OK } = require("../core/success.response");
 const saltRounds = 10;
 const Roles = {
   SHOP: "SHOP",
@@ -18,7 +20,7 @@ class AccessService {
     try {
       const holderShop = await shopModel.findOne({ email }).lean();
       if (holderShop) {
-        return { status: 409, message: "Email already exists" };
+        throw new ConflictResponse(`Email already exists`);
       }
       const passwordHash = await bcrypt.hash(password, saltRounds);
 
@@ -32,25 +34,19 @@ class AccessService {
       if (newShop) {
         // create private key and public key
         const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
-          modulusLength: 4096,
-          publicKeyEncoding: {
-            type: "spki",
-            format: "pem",
-          },
-          privateKeyEncoding: {
-            type: "pkcs8",
-            format: "pem",
-          },
+          modulusLength: 2048,
+          publicKeyEncoding: { type: "spki", format: "pem" },
+          privateKeyEncoding: { type: "pkcs8", format: "pem" },
         });
 
-        const publicKeyString = await KeyTokenService.createKeyToken({
+        const keyToken = await KeyTokenService.createKeyToken({
           userId: newShop._id,
           publicKey,
           privateKey,
         });
 
-        if (!publicKeyString) {
-          return { status: 500, message: "Error creating public key" };
+        if (!keyToken) {
+          throw new ConflictResponse(`Error creating public key`);
         }
 
         const token = await createTokenPair(
@@ -58,21 +54,17 @@ class AccessService {
           publicKey,
           privateKey
         );
-        return {
-          status: 200,
-          message: "Sign up successfully",
-          metadata: {
-            shop: getInfoData({
-              field: ["_id", "name", "email"],
-              object: newShop,
-            }),
-            token,
-          },
-        };
+        return new OK("Sign up successfully", {
+          shop: getInfoData({
+            field: ["_id", "name", "email"],
+            object: newShop,
+          }),
+          token,
+        }).send();
       }
-      return { status: 500, message: "Error creating shop" };
+      throw new ConflictResponse(`Error creating shop`);
     } catch (err) {
-      return { status: 500, message: err.message };
+      return { status: err.status || 500, message: err.message || "Error" };
     }
   };
 }
