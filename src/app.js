@@ -33,12 +33,13 @@ app.use((req, res, next) => {
   next(error);
 });
 
-// 500 internal server error
+// global error handler
 app.use((error, req, res, next) => {
   console.log(`Error: ${error}`);
   return res.status(error.status || 500).json({
     status: error.status || 500,
     message: error.message || "Internal Server Error",
+    stack: error.stack || "",
   });
 });
 
