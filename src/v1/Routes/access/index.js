@@ -6,5 +6,6 @@ const { asyncHandler } = require("../../auth/checkAuth");
 const router = express.Router();
 
 router.post("/shop/signup", asyncHandler(accessController.signUp));
-
+router.post("/shop/login", asyncHandler(accessController.login));
+router.post("/shop/logout", asyncHandler(accessController.logout));
 module.exports = router;

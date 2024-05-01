@@ -31,9 +31,27 @@ class ForbiddenResponse extends ErrorResponse {
   }
 }
 
+class BadRequestResponse extends ErrorResponse {
+  constructor(message = ReasonPhrases.BAD_REQUEST, status) {
+    super(message, status);
+    this.status = StatusCodes.BAD_REQUEST;
+    this.message = message;
+  }
+}
+
+class UnauthorizedResponse extends ErrorResponse {
+  constructor(message = ReasonPhrases.UNAUTHORIZED, status) {
+    super(message, status);
+    this.status = StatusCodes.UNAUTHORIZED;
+    this.message = message;
+  }
+}
+
 module.exports = {
   ErrorResponse,
   ConflictResponse,
   NotFoundResponse,
   ForbiddenResponse,
+  BadRequestResponse,
+  UnauthorizedResponse,
 };

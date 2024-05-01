@@ -9,17 +9,21 @@ const HEADER = {
 };
 
 const apiKey = async (req, res, next) => {
-  const key = req.headers[HEADER.API_KEY]?.toString();
-  if (!key) {
-    throw new ForbiddenResponse(`Invalid API key`);
+  try {
+    const key = req.headers[HEADER.API_KEY]?.toString();
+    if (!key) {
+      throw new ForbiddenResponse(`Invalid API key`);
+    }
+    const objKey = await apiKeyService.findById(key);
+    console.log(objKey);
+    if (!objKey) {
+      throw new ForbiddenResponse(`Invalid API key`);
+    }
+    req.objKey = objKey;
+    next();
+  } catch (error) {
+    next(error);
   }
-  const objKey = await apiKeyService.findById(key);
-  console.log(objKey);
-  if (!objKey) {
-    throw new ForbiddenResponse(`Invalid API key`);
-  }
-  req.objKey = objKey;
-  next();
 };
 
 const permissions = (permission) => {

@@ -6,18 +6,63 @@ const crypto = require("crypto");
 const KeyTokenService = require("./keyToken.service");
 const { createTokenPair } = require("../auth/authUltils");
 const { getInfoData } = require("../utils");
-const { ConflictResponse } = require("../core/error.response");
+const {
+  ConflictResponse,
+  BadRequestResponse,
+  UnauthorizedResponse,
+} = require("../core/error.response");
 const { OK } = require("../core/success.response");
+const Roles = require("../consts/roles");
+const { findByEmail } = require("./shop.service");
 const saltRounds = 10;
-const Roles = {
-  SHOP: "SHOP",
-  ADMIN: "ADMIN",
-  WRITER: "WRITER",
-};
 
 class AccessService {
+  static login = async ({ email, password, refreshToken = null }) => {
+    const foundShop = await findByEmail(email);
+    // check email in database
+    if (!foundShop) {
+      throw new BadRequestResponse(`Shop not registered`);
+    }
+    const match = bcrypt.compare(password, foundShop.password);
+    // compare password with hash password
+    if (!match) {
+      throw new UnauthorizedResponse(`Authentication failed`);
+    }
+    //create public key and private key
+    const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
+      modulusLength: 2048,
+      publicKeyEncoding: {
+        type: "spki",
+        format: "pem",
+      },
+      privateKeyEncoding: {
+        type: "pkcs8",
+        format: "pem",
+      },
+    });
+    // create token and refresh token
+    const token = await createTokenPair(
+      { userId: foundShop._id, email: foundShop.email },
+      publicKey,
+      privateKey
+    );
+    //create key token
+    const keyToken = await KeyTokenService.createKeyToken({
+      userId: foundShop._id,
+      publicKey,
+      privateKey,
+      refreshToken: token.refreshToken,
+    });
 
-  
+    return {
+      shop: getInfoData({
+        field: ["_id", "name", "email"],
+        object: foundShop,
+      }),
+      token,
+    };
+  };
+
   static signUp = async ({ name, email, password }) => {
     const holderShop = await shopModel.findOne({ email }).lean();
     if (holderShop) {
@@ -71,6 +116,9 @@ class AccessService {
     }
     throw new ConflictResponse(`Error creating shop`);
   };
+  static logout = async () =>{
+    
+  }
 }
 
 module.exports = AccessService;
