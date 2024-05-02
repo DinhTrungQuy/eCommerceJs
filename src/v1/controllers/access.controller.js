@@ -13,6 +13,11 @@ class AccessController {
     let login = await AccessService.login(req.body);
     return new OK({ metadata: login }).send(res);
   };
+
+  logout = async (req, res, next) => {
+    let logout = await AccessService.logout(req.keyStore);
+    return new OK({ metadata: logout }).send(res);
+  };
 }
 
 module.exports = new AccessController();

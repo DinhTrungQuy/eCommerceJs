@@ -4,19 +4,29 @@ const shopModel = require("../models/shop.model");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const KeyTokenService = require("./keyToken.service");
-const { createTokenPair } = require("../auth/authUltils");
+const { createTokenPair, verifyJWT } = require("../auth/authUltils");
 const { getInfoData } = require("../utils");
 const {
   ConflictResponse,
   BadRequestResponse,
   UnauthorizedResponse,
+  ForbiddenResponse,
 } = require("../core/error.response");
-const { OK } = require("../core/success.response");
 const Roles = require("../consts/roles");
 const { findByEmail } = require("./shop.service");
 const saltRounds = 10;
 
 class AccessService {
+  static handleRefreshToken = async (refreshToken) => {
+    //check token in database if it exists
+    const foundToken = await KeyTokenService.getRefreshTokenUsed(refreshToken);
+    if (foundToken) {
+      const { userId, email } = verifyJWT(refreshToken, foundToken.publicKey);
+      await KeyTokenService.removeKeyTokenByUserId(userId);
+      throw new ForbiddenResponse(`Invalid refresh token`);
+    }
+  };
+
   static login = async ({ email, password, refreshToken = null }) => {
     const foundShop = await findByEmail(email);
     // check email in database
@@ -116,9 +126,9 @@ class AccessService {
     }
     throw new ConflictResponse(`Error creating shop`);
   };
-  static logout = async () =>{
-    
-  }
+  static logout = async (keyStore) => {
+    return KeyTokenService.removeKeyTokenById(keyStore._id);
+  };
 }
 
 module.exports = AccessService;
