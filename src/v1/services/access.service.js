@@ -17,14 +17,48 @@ const { findByEmail } = require("./shop.service");
 const saltRounds = 10;
 
 class AccessService {
-  static handleRefreshToken = async (refreshToken) => {
+  static handleRefreshToken = async ({ refreshToken }) => {
     //check token in database if it exists
     const foundToken = await KeyTokenService.getRefreshTokenUsed(refreshToken);
     if (foundToken) {
       const { userId, email } = verifyJWT(refreshToken, foundToken.publicKey);
+      console.log(
+        `access.service.js - handleRefreshToken - userId: ${userId} email: ${email}`
+      );
+      //remove all tokens from database
       await KeyTokenService.removeKeyTokenByUserId(userId);
       throw new ForbiddenResponse(`Invalid refresh token`);
     }
+    //check refresh token in database
+    const foundKeyToken = await KeyTokenService.getRefreshToken(refreshToken);
+    if (!foundKeyToken) {
+      throw new UnauthorizedResponse(`Invalid refresh token`);
+    }
+    //verify refresh token
+    const { userId, email } = verifyJWT(refreshToken, foundKeyToken.privateKey);
+    console.log(
+      `access.service.js - handleRefreshToken - userId: ${userId} email: ${email}`
+    );
+    const foundShop = await findByEmail(email);
+    if (!foundShop) {
+      throw new BadRequestResponse(`Shop not registered`);
+    }
+    //create new token and refresh token
+    const tokens = await createTokenPair(
+      foundShop,
+      foundKeyToken.publicKey,
+      foundKeyToken.privateKey
+    );
+    //save new token and refresh token in database
+    await KeyTokenService.updateRefreshTokenById(
+      foundKeyToken._id,
+      tokens.refreshToken,
+      refreshToken
+    );
+    return {
+      user: { userId, email },
+      tokens,
+    };
   };
 
   static login = async ({ email, password, refreshToken = null }) => {

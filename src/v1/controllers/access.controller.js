@@ -4,6 +4,10 @@ const { OK, Created } = require("../core/success.response");
 const AccessService = require("../services/access.service");
 
 class AccessController {
+  handleRefreshToken = async (req, res, next) => {
+    let refreshToken = await AccessService.handleRefreshToken(req.body);
+    return new OK({ metadata: refreshToken }).send(res);
+  };
   signUp = async (req, res, next) => {
     let signUp = await AccessService.signUp(req.body);
     return new Created({ metadata: signUp }).send(res);

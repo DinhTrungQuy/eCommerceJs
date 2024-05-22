@@ -32,9 +32,22 @@ const authentication = async (req, res, next) => {
   if (!keyStore) {
     throw new NotFoundResponse(`Invalid client id`);
   }
-  const accessToken = req.headers[HEADER.AUTHORIZATION];
+  const accessToken = req.headers[HEADER.AUTHORIZATION]?.split(" ")[1];
   if (!accessToken) {
     throw new UnauthorizedResponse(`Invalid access token`);
+  }
+  const refreshToken = req.headers[HEADER.REFRESH_TOKEN];
+  if (refreshToken) {
+    const payload = jwt.verify(refreshToken, keyStore.publicKey, {
+      algorithms: ["RS256"],
+    });
+    if (userId != payload.userId) {
+      throw new UnauthorizedResponse(`Invalid access token`);
+    }
+    req.keyStore = keyStore;
+    req.userId = userId;
+    req.refreshToken = refreshToken;
+    return next();
   }
   const payload = jwt.verify(accessToken, keyStore.publicKey, {
     algorithms: ["RS256"],
@@ -43,7 +56,9 @@ const authentication = async (req, res, next) => {
     throw new UnauthorizedResponse(`Invalid access token`);
   }
   req.keyStore = keyStore;
-  next();
+  req.userId = userId;
+
+  return next();
 };
 
 const verifyJWT = (token, keySecret) => {
