@@ -32,4 +32,6 @@ router.post(
   asyncHandler(productController.unPublishProductByShop)
 );
 
+router.patch("/:product_id", asyncHandler(productController.updateProduct));
+
 module.exports = router;

@@ -100,6 +100,17 @@ const searchProduct = async ({ keySearch, limit, skip }) => {
   return result;
 };
 
+const updateProductById = async ({
+  productId,
+  payload,
+  model,
+  isNew = true,
+}) => {
+  return await model.findByIdAndUpdate(productId, payload, {
+    new: isNew,
+  });
+};
+
 module.exports = {
   findAllProucts,
   findProductById,
@@ -108,4 +119,5 @@ module.exports = {
   publishProductByShop,
   unPublishProductByShop,
   searchProduct,
+  updateProductById,
 };

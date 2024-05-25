@@ -74,6 +74,18 @@ class ProductController {
       message: "List products from search key",
     }).send(res);
   };
+
+  updateProduct = async (req, res, next) => {
+    const product = await ProductFactory.updateProduct(req.body.product_type, {
+      product_id: req.params.product_id,
+      product_shop: req.userId,
+      ...req.body,
+    });
+    return new OK({
+      metadata: product,
+      message: "Update Product Successfully",
+    }).send(res);
+  };
 }
 
 module.exports = new ProductController();
