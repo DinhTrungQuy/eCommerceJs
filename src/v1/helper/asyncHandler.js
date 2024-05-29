@@ -1,6 +1,10 @@
 const asyncHandler = (func) => {
-  return (req, res, next) => {
-    func(req, res, next).catch(next);
+  return async (req, res, next) => {
+    try {
+      await func(req, res, next);
+    } catch (error) {
+      next(error);
+    }
   };
 };
 

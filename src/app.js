@@ -5,6 +5,8 @@ const helmet = require("helmet");
 const app = express();
 const compression = require("compression");
 const initMongodb = require("./v1/databases/init.mongodb");
+const LoggerService = require("./v1/Logger/logger.service");
+const { NotFoundResponse } = require("./v1/core/error.response");
 require("dotenv").config();
 
 //initial database connection
@@ -27,15 +29,16 @@ app.use("/", require("./v1/Routes"));
 // 404 not found
 app.use((req, res, next) => {
   const error = {
-    message: new Error(`404 Not Found`),
+    message: new NotFoundResponse(`404 Not Found Route`),
     status: 404,
   };
   next(error);
 });
 
 // global error handler
+const logger = LoggerService.createLoggerService();
 app.use((error, req, res, next) => {
-  console.log(`Error: ${error}`);
+  logger.exceptionLog(error);
   return res.status(error.status || 500).json({
     status: error.status || 500,
     message: error.message || "Internal Server Error",

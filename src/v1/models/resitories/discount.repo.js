@@ -27,7 +27,7 @@ const addDiscount = async ({
   discount_appiles_to,
   discount_product_ids,
 }) => {
-  await discountModel.create({
+  return await discountModel.create({
     discount_name,
     discount_description,
     discount_value,
@@ -44,10 +44,6 @@ const addDiscount = async ({
   });
 };
 
-const updateDiscount = async () => {
-  const {} = discountModel.findByIdAndUpdate();
-};
-
 const getAllDiscountCodesWithProduct = async ({
   discount_code,
   discount_shopId,
@@ -57,12 +53,12 @@ const findAllDiscountCodesUnSelect = async ({
   limit,
   page,
   sort = "ctime",
-  filter,
+  filter = {},
   unSelect,
 }) => {
   const skip = limit * (page - 1);
   const sortBy = sort === "ctime" ? { _id: -1 } : { _id: 1 };
-  return await discountModel
+  const result = await discountModel
     .find(filter)
     .sort(sortBy)
     .skip(skip)
@@ -70,6 +66,7 @@ const findAllDiscountCodesUnSelect = async ({
     .select(unGetSelectData(unSelect))
     .lean()
     .exec();
+  return result;
 };
 
 const findAllDiscountCodesSelect = async ({
@@ -81,7 +78,7 @@ const findAllDiscountCodesSelect = async ({
 }) => {
   const skip = limit * (page - 1);
   const sortBy = sort === "ctime" ? { _id: -1 } : { _id: 1 };
-  return await discountModel
+  const result = await discountModel
     .find(filter)
     .sort(sortBy)
     .skip(skip)
@@ -89,13 +86,45 @@ const findAllDiscountCodesSelect = async ({
     .select(getSelectData(select))
     .lean()
     .exec();
+  return result;
+};
+
+const deleteDiscountCode = async ({ discount_shopId, discount_code }) => {
+  return await discountModel.findOneAndDelete({
+    discount_code,
+    discount_shopId: convertToObjectIdMongodb(discount_shopId),
+  });
+};
+
+const cancelDiscountCode = async ({ shopId, discount_code, userId }) => {
+  const foundDiscount = await findDiscount({
+    discount_code,
+    discount_shopId: convertToObjectIdMongodb(shopId),
+  });
+  if (!foundDiscount) {
+    throw new Error("Discount code not found");
+  }
+  if (foundDiscount.discount_appiles_to === "all") {
+    return await discountModel.findByIdAndUpdate({});
+  }
+  const result = await discountModel.findByIdAndUpdate({
+    $pull: {
+      discount_users_used: userId,
+    },
+    $inc: {
+      discount_max_uses: 1,
+      discount_uses_count: -1,
+    },
+  });
+  return result;
 };
 
 module.exports = {
   findDiscount,
   addDiscount,
-  updateDiscount,
   getAllDiscountCodesWithProduct,
   findAllDiscountCodesUnSelect,
   findAllDiscountCodesSelect,
+  deleteDiscountCode,
+  cancelDiscountCode,
 };

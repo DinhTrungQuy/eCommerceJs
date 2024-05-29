@@ -9,6 +9,7 @@ const addInventory = async ({ productId, shopId, stock, location }) => {
   });
 };
 
+
 module.exports = {
   addInventory,
 };

@@ -9,7 +9,11 @@ const {
 } = require("../../models/product.model");
 
 const { Types } = require("mongoose");
-const { getSelectData, unGetSelectData } = require("../../utils");
+const {
+  getSelectData,
+  unGetSelectData,
+  convertToObjectIdMongodb,
+} = require("../../utils");
 
 const querryProduct = async ({ querry, limit, skip }) => {
   return await productModel
@@ -111,6 +115,29 @@ const updateProductById = async ({
   });
 };
 
+const checkoutProduct = async ({ item_products, shop_id }) => {
+  return await Promise.all(
+    item_products.map(async (item) => {
+      const { product_id, quantity } = item;
+      const foundProduct = await findProductById({ product_id });
+      if (!foundProduct) {
+        throw new BadRequestResponse("Product not found");
+      }
+      if (foundProduct.quantity < quantity) {
+        throw new BadRequestResponse("Product out of stock");
+      }
+      if (foundProduct.product_shop.toString() !== shop_id) {
+        throw new BadRequestResponse("Product not belong to shop");
+      }
+      return {
+        product_id,
+        quantity,
+        product_price: foundProduct.product_price,
+      };
+    })
+  );
+};
+
 module.exports = {
   findAllProucts,
   findProductById,
@@ -120,4 +147,5 @@ module.exports = {
   unPublishProductByShop,
   searchProduct,
   updateProductById,
+  checkoutProduct,
 };
