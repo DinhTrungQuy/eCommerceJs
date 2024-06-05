@@ -14,6 +14,17 @@ class CheckoutController {
       message: "Checkout review successfully",
     }).send(res);
   };
+
+  orderByUser = async (req, res, next) => {
+    let orderByUser = await CheckoutService.orderByUser({
+      userId: req.userId,
+      ...req.body,
+    });
+    return new Created({
+      metadata: orderByUser,
+      message: "Order by user successfully",
+    }).send(res);
+  };
 }
 
 module.exports = new CheckoutController();

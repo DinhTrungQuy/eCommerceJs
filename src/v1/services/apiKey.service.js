@@ -9,11 +9,6 @@ class apiKeyService {
     //   permissions: ["0000", "1111"],
     //   status: true,
     // });
-    await apikeyModel.create({
-      key: crypto.randomBytes(16).toString("hex"),
-      permissions: ["0000", "1111"],
-      status: true,
-    });
     const apiKey = await apikeyModel.findOne({ key: key, status: true }).lean();
     return apiKey;
   };

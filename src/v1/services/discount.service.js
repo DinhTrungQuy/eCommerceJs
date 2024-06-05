@@ -1,6 +1,5 @@
 "use strict";
 
-
 const {
   BadRequestResponse,
   NotFoundResponse,
@@ -158,6 +157,8 @@ class DiscountService {
       discount_max_uses_per_user,
       discount_users_used,
       discount_type,
+      discount_product_ids,
+      discount_appiles_to,
     } = foundDiscount;
     if (!discount_is_active) {
       throw new BadRequestResponse("Discount code is not active");
@@ -173,16 +174,16 @@ class DiscountService {
         "Discount code has expired or not started yet"
       );
     }
+    const discount_products = await checkoutProduct({
+      item_products: products,
+      shop_id: shopId,
+    });
     let totalOrder = 0;
-    if (discount_min_order_value > 0) {
-      const discount_products = await checkoutProduct({
-        item_products: products,
-        shop_id: shopId,
-      });
-      totalOrder = discount_products.reduce(
-        (acc, product) => acc + product.product_price * product.quantity,
-        0
-      );
+    totalOrder = discount_products.reduce(
+      (acc, product) => acc + product.product_price * product.quantity,
+      0
+    );
+    if (discount_min_order_value < totalOrder) {
       if (totalOrder < discount_min_order_value) {
         throw new BadRequestResponse(
           "Order value must be greater than " + discount_min_order_value
@@ -200,6 +201,23 @@ class DiscountService {
         }
       }
     }
+    let products_new = {};
+    if (discount_appiles_to === "all") {
+      products_new = discount_products.map((v) => {
+        v.product_price = v.product_price - v.product_price * discount_value;
+        return v;
+      });
+    }
+    if (discount_appiles_to === "specific") {
+      products_new = discount_products.map((v) => {
+        if (discount_product_ids.includes(v.product_id)) {
+          if (discount_type !== "fixed_amount")
+            v.product_price =
+              v.product_price - v.product_price * (discount_value / 100);
+        }
+        return v;
+      });
+    }
     const amount =
       discount_type === "fixed"
         ? discount_value
@@ -208,6 +226,7 @@ class DiscountService {
       totalOrder,
       discount: amount,
       totalPrice: totalOrder - amount,
+      products: products_new,
     };
   }
 

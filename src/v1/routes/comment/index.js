@@ -3,12 +3,12 @@
 const express = require("express");
 const asyncHandler = require("../../helper/asyncHandler");
 const { authentication } = require("../../auth/authUltils");
-const checkoutController = require("../../controllers/checkout.controller");
+const commentController = require("../../controllers/comment.controller");
 const router = express.Router();
 
+router.get("", asyncHandler(commentController.getCommentsByParentId));
 router.use(authentication);
 
-router.post("", asyncHandler(checkoutController.checkoutReview));
-router.post("/order", asyncHandler(checkoutController.orderByUser));
+router.post("", asyncHandler(commentController.createComment));
 
 module.exports = router;
