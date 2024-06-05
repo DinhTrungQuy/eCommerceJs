@@ -15,7 +15,8 @@ class CommentController {
   };
 
   getCommentsByParentId = async (req, res, next) => {
-    let comments = await CommentService.getCommentsByParentId(req.params);
+    console.log(req.query);
+    let comments = await CommentService.getCommentsByParentId(req.query);
     return new OK({
       metadata: comments,
     }).send(res);
