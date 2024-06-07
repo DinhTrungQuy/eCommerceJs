@@ -1,5 +1,5 @@
 var app = require("./src/app");
-const LoggerService = require("./src/v1/Logger/logger.service");
+const LoggerService = require("./src/logger/logger.service");
 
 const PORT = process.env.PORT || 3000;
 

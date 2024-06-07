@@ -98,6 +98,44 @@ class CommentService {
       .skip(offset);
     return comments;
   }
+
+  static async deleteCommentById({ commentId }) {
+    const foundComment = await commentModel.findById(
+      convertToObjectIdMongodb(commentId)
+    );
+    if (!foundComment) {
+      throw new BadRequestResponse("Comment not found");
+    }
+    const width = foundComment.comment_right - foundComment.comment_left + 1;
+    const result = await commentModel.deleteMany({
+      comment_productId: foundComment.comment_productId,
+      comment_left: { $gte: foundComment.comment_left },
+      comment_right: { $lte: foundComment.comment_right },
+    });
+    await commentModel.updateMany(
+      {
+        comment_productId: foundComment.comment_productId,
+        comment_right: { $gte: foundComment.comment_right },
+      },
+      {
+        $inc: {
+          comment_right: -width,
+        },
+      }
+    );
+    await commentModel.updateMany(
+      {
+        comment_productId: foundComment.comment_productId,
+        comment_left: { $gt: foundComment.comment_right },
+      },
+      {
+        $inc: {
+          comment_left: -width,
+        },
+      }
+    );
+    return result;
+  }
 }
 
 module.exports = CommentService;
